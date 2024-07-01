@@ -2,9 +2,11 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -17,8 +19,14 @@ import (
 // Config represents the check plugin config.
 type Config struct {
 	sensu.PluginConfig
-	Url    string
-	Labels []string
+	Url      string
+	Labels   []string
+	User     string
+	Password string
+	Cert     string
+	Key      string
+	CaCert   string
+	insecureSkipVerify bool
 }
 
 type Tag struct {
@@ -54,6 +62,42 @@ var (
 			Default:  []string{},
 			Value:    &plugin.Labels,
 		},
+		&sensu.PluginConfigOption[string]{
+			Path:     "user",
+			Argument: "user",
+			Usage:    "User for basic auth",
+			Value:    &plugin.User,
+		},
+		&sensu.PluginConfigOption[string]{
+			Path:     "password",
+			Argument: "password",
+			Usage:    "Password for basic auth",
+			Value:    &plugin.Password,
+		},
+		&sensu.PluginConfigOption[string]{
+			Path:     "cert",
+			Argument: "cert",
+			Usage:    "Cert to use for mTLS",
+			Value:    &plugin.Cert,
+		},
+		&sensu.PluginConfigOption[string]{
+			Path:     "key",
+			Argument: "key",
+			Usage:    "Key to use for mTLS",
+			Value:    &plugin.Key,
+		},
+		&sensu.PluginConfigOption[string]{
+			Path:     "cacert",
+			Argument: "cacert",
+			Usage:    "CA cert to use for mTLS",
+			Value:    &plugin.CaCert,
+		},
+		&sensu.PluginConfigOption[bool]{
+			Path:     "insecureskipverify",
+			Argument: "insecureskipverify",
+			Usage:    "insecureskipverify option if using self signed certs.",
+			Value:    &plugin.insecureSkipVerify,
+		},
 	}
 )
 
@@ -65,9 +109,34 @@ func main() {
 func checkArgs(event *corev2.Event) (int, error) {
 	return sensu.CheckStateOK, nil
 }
-func QueryExporter(exporterURL string, Labels []string) (model.Vector, error) {
+func QueryExporter(exporterURL string, Labels []string, user string, password string, insecureSkipVerify bool, cert string, key string, cacert string) (model.Vector, error) {
 
-	tlsconfig := &tls.Config{InsecureSkipVerify: true}
+	tlsconfig := &tls.Config{}
+
+	if insecureSkipVerify {
+		tlsconfig = &tls.Config{InsecureSkipVerify: true}
+	}
+
+	if len(cert) > 0 || len(key) > 0 || len(cacert) > 0 {
+		certpair, err := tls.LoadX509KeyPair(cert, key)
+		if err != nil {
+			fmt.Printf("could not load certificate(%s) or key(%s): %v", cert, key, err)
+			return nil, err
+		}
+
+		cacertfile, err := os.ReadFile(cacert)
+		if err != nil {
+			fmt.Printf("could not load CA(%s): %v", cacert, err)
+			return nil, err
+		}
+		rootca := x509.NewCertPool()
+		rootca.AppendCertsFromPEM(cacertfile)
+		tlsconfig = &tls.Config{
+			Certificates: []tls.Certificate{certpair},
+			RootCAs:      rootca,
+		}
+	}
+
 	tr := &http.Transport{
 		TLSClientConfig: tlsconfig,
 	}
@@ -75,6 +144,9 @@ func QueryExporter(exporterURL string, Labels []string) (model.Vector, error) {
 	req, err := http.NewRequest("GET", exporterURL, nil)
 	if err != nil {
 		return nil, err
+	}
+	if user != "" && password != "" {
+		req.SetBasicAuth(user, password)
 	}
 
 	expResponse, err := client.Do(req)
@@ -120,7 +192,7 @@ func executeCheck(event *corev2.Event) (int, error) {
 	var samples model.Vector
 	var err error
 
-	samples, err = QueryExporter(plugin.Url, plugin.Labels)
+	samples, err = QueryExporter(plugin.Url, plugin.Labels, plugin.User, plugin.Password, plugin.insecureSkipVerify, plugin.Cert, plugin.Key, plugin.CaCert)
 	if err != nil {
 		fmt.Printf("Failed: %s\n", err)
 		return sensu.CheckStateUnknown, nil
