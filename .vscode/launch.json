@@ -1,0 +1,13 @@
+{
+    // ...
+    "configuration": [
+      {
+        // ...
+        "program": "${workspaceRoot}",
+        // ...
+      }
+    ],
+    "configurations": [
+    
+    ]
+  }
