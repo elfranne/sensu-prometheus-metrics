@@ -19,13 +19,13 @@ import (
 // Config represents the check plugin config.
 type Config struct {
 	sensu.PluginConfig
-	Url      string
-	Labels   []string
-	User     string
-	Password string
-	Cert     string
-	Key      string
-	CaCert   string
+	Url                string
+	Labels             []string
+	User               string
+	Password           string
+	Cert               string
+	Key                string
+	CaCert             string
 	insecureSkipVerify bool
 }
 
@@ -168,7 +168,7 @@ func QueryExporter(exporterURL string, Labels []string, user string, password st
 	samples := model.Vector{}
 
 	decodeOptions := &expfmt.DecodeOptions{
-		Timestamp: model.Time(time.Now().Unix()),
+		Timestamp: model.Time(time.Now().UnixMilli()),
 	}
 
 	for _, family := range metricFamilies {
