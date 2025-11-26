@@ -111,7 +111,7 @@ func checkArgs(event *corev2.Event) (int, error) {
 }
 func QueryExporter(exporterURL string, Labels []string, user string, password string, insecureSkipVerify bool, cert string, key string, cacert string) (model.Vector, error) {
 
-	tlsconfig := &tls.Config{}
+tlsconfig := &tls.Config{}
 
 	if insecureSkipVerify {
 		tlsconfig = &tls.Config{InsecureSkipVerify: true}
@@ -153,7 +153,11 @@ func QueryExporter(exporterURL string, Labels []string, user string, password st
 	if err != nil {
 		return nil, err
 	}
-	defer expResponse.Body.Close()
+	defer func() {
+		if cerr := expResponse.Body.Close(); cerr != nil {
+			fmt.Printf("failed to close response body: %v\n", cerr)
+		}
+	}()
 
 	if expResponse.StatusCode != http.StatusOK {
 		return nil, errors.New("exporter returned non OK HTTP response status: " + expResponse.Status)
@@ -182,8 +186,8 @@ func QueryExporter(exporterURL string, Labels []string, user string, password st
 					addLabel.Metric[model.LabelName(labelName)] = model.LabelValue(labelValue)
 				}
 			}
+			samples = append(samples, familySamples...)
 		}
-		samples = append(samples, familySamples...)
 	}
 	return samples, nil
 }
