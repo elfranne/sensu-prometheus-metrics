@@ -153,8 +153,12 @@ func QueryExporter(exporterURL string, Labels []string, user string, password st
 	if err != nil {
 		return nil, err
 	}
-	defer expResponse.Body.Close()
-
+	defer func() {
+	    if err := expResponse.Body.Close(); err != nil {
+	        // Handle the error (e.g., log it)
+	        log.Printf("Error closing expResponse.Body: %v", err)
+	    }
+	}()
 	if expResponse.StatusCode != http.StatusOK {
 		return nil, errors.New("exporter returned non OK HTTP response status: " + expResponse.Status)
 	}
