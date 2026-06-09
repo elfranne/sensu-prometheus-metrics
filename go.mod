@@ -1,10 +1,10 @@
 module github.com/elfranne/sensu-prometheus-metrics
 
-go 1.25.0
+go 1.26.3
 
 require (
 	github.com/prometheus/common v0.68.1
-	github.com/sensu/core/v2 v2.20.0
+	github.com/sensu/core/v2 v2.21.1
 	github.com/sensu/sensu-plugin-sdk v0.19.0
 )
 
