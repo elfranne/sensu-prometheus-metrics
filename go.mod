@@ -4,7 +4,7 @@ go 1.26.5
 
 require (
 	github.com/prometheus/common v0.70.0
-	github.com/sensu/core/v2 v2.21.3
+	github.com/sensu/core/v2 v2.21.4
 	github.com/sensu/sensu-plugin-sdk v0.19.0
 )
 
