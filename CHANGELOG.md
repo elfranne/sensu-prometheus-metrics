@@ -7,6 +7,8 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.3.0] - 2026-09-08
+
 ### Fixed
 - Scraping panicked with `Invalid name validation scheme requested: unset`
   instead of returning metrics. prometheus/common v0.71.0 gave
