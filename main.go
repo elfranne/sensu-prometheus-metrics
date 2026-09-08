@@ -154,15 +154,17 @@ func QueryExporter(exporterURL string, Labels []string, user string, password st
 		return nil, err
 	}
 	defer func() {
-	    if err := expResponse.Body.Close(); err != nil {
-	        // Handle the error (e.g., log it)
-	        fmt.Printf("Error closing expResponse.Body: %v", err)
-	    }
+		if err := expResponse.Body.Close(); err != nil {
+			// Handle the error (e.g., log it)
+			fmt.Printf("Error closing expResponse.Body: %v", err)
+		}
 	}()
 	if expResponse.StatusCode != http.StatusOK {
 		return nil, errors.New("exporter returned non OK HTTP response status: " + expResponse.Status)
 	}
-	var parser expfmt.TextParser
+	// The zero value of expfmt.TextParser has no name validation scheme set,
+	// which panics while parsing, so ask for UTF-8 names explicitly.
+	parser := expfmt.NewTextParser(model.UTF8Validation)
 
 	metricFamilies, err := parser.TextToMetricFamilies(expResponse.Body)
 	if err != nil {
