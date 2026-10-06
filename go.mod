@@ -3,7 +3,7 @@ module github.com/elfranne/sensu-prometheus-metrics
 go 1.26.8
 
 require (
-	github.com/prometheus/common v0.71.0
+	github.com/prometheus/common v0.72.0
 	github.com/sensu/core/v2 v2.21.6
 	github.com/sensu/sensu-plugin-sdk v0.19.0
 )
